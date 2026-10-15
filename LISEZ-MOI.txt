@@ -1,0 +1,15 @@
+# PWA — Éditeur d’itinéraire technique
+
+## Installation sur GitHub Pages
+1. Créer un dépôt GitHub (ou utiliser celui qui héberge déjà l’outil).
+2. Mettre ces 4 fichiers à la racine : `index.html`, `manifest.json`, `sw.js`, `icon.svg`.
+3. Activer GitHub Pages sur la branche/dossier contenant ces fichiers.
+4. Ouvrir l’adresse HTTPS dans Chrome/Edge/Firefox puis choisir l’installation de l’application si proposée.
+
+## Pour les prochaines mises à jour
+Tu modifies uniquement ton outil puis tu remplaces **`index.html`** sur GitHub. Ne touche pas à `manifest.json`, `sw.js` ou `icon.svg` sauf si tu veux changer le nom, l’icône ou le fonctionnement de la PWA.
+
+Le service worker utilise une stratégie « réseau d’abord » pour `index.html` : lorsque l’app est en ligne, la nouvelle version déposée sur GitHub est récupérée automatiquement. Hors connexion, la dernière version mise en cache reste disponible.
+
+## Attention
+L’outil utilise actuellement la bibliothèque XLSX depuis `cdnjs.cloudflare.com`. Elle doit donc être accessible pour les fonctions d’export Excel.
