@@ -1,19 +1,14 @@
 {
   "name": "Éditeur d’itinéraire technique",
-  "short_name": "Itinéraire technique",
-  "description": "Outil d’édition d’itinéraires techniques et de rotations.",
-  "start_url": "./index.html",
+  "short_name": "Itinéraire Tech",
+  "description": "Rotations, interventions et coûts à l’hectare",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f6f3ea",
   "theme_color": "#5b7a4f",
   "lang": "fr",
   "icons": [
-    {
-      "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
+    {"src":"./icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
   ]
 }
