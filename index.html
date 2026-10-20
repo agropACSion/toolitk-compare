@@ -1,16 +1,8 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
-<link rel="manifest" href="./manifest.json">
-<meta name="theme-color" content="#5b7a4f">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="icon" href="./icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="./icon.svg">
-</head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <!DOCTYPE html>
 <html lang="fr"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="robots" content="noindex, nofollow">
 <title>Éditeur d'itinéraire technique</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -280,6 +272,11 @@
   .farmer-switch-current span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .farmer-pop-item{display:flex;align-items:center;justify-content:space-between;gap:8px;}
   .farmer-pop-item.active{background:var(--panel-2);border-radius:var(--r-s);}
+
+  /* ---------- Synchronisation base de coûts ---------- */
+  .bareme-sync-box{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 16px;margin-bottom:14px;}
+  .bareme-sync-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .bareme-sync-row input{flex:1 1 260px;min-width:0;height:34px;padding:0 10px;border:1px solid var(--field);border-radius:var(--r-s);background:var(--panel);color:var(--ink);font-size:var(--fs-m);}
 
   /* ---------- Base de coûts ---------- */
   .settings-cat{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:8px;}
@@ -556,7 +553,7 @@ const EMBEDDED_DATA = (() => {
     return el ? JSON.parse(el.textContent) : null;
   }catch(e){ return null; }
 })();
-const EMBEDDED_KEY_MAP = {itk_rotations_v4:'rotations', itk_techniques_v1:'techniques', itk_project:'project', itk_syn_opts:'synOpts', itk_farmers:'farmers', itk_current_farmer:'currentFarmerId'};
+const EMBEDDED_KEY_MAP = {itk_rotations_v4:'rotations', itk_techniques_v1:'techniques', itk_project:'project', itk_syn_opts:'synOpts', itk_farmers:'farmers', itk_current_farmer:'currentFarmerId', itk_bareme_sync:'baremeSync'};
 const STORAGE_AVAILABLE = (() => {
   try{ localStorage.setItem('__test__','1'); localStorage.removeItem('__test__'); return true; }
   catch(e){ return false; }
@@ -2063,6 +2060,15 @@ function toggleAllCats(open){ Object.keys(CATS).forEach(k=>open ? openCats.add(k
 function renderSettingsPage(){
   const pg = document.getElementById('settingsPage');
   let html = `<p class="settings-note">Base de coûts par catégorie, librement modifiable. Les lignes « COC 2025 » proviennent du barème Chambres d'agriculture France (coût chantier ; la colonne « avec MO » est reprise sur les pastilles). « Exporter Excel » produit un classeur avec un onglet par catégorie ; « Importer Excel » relit ce format, chaque onglet présent remplaçant la catégorie correspondante.</p>
+    <div class="bareme-sync-box">
+      <h3 style="margin:0 0 4px;font-size:var(--fs-b);">Synchronisation automatique</h3>
+      <p class="settings-note" style="margin:0 0 10px;">Pointez ce champ vers un fichier .xlsx au même format que « Exporter Excel », accessible en ligne (par exemple dans le même dépôt GitHub que cet outil, publié via GitHub Pages — ou tout autre hébergement qui autorise les requêtes <code>fetch()</code> depuis un navigateur, comme <code>raw.githubusercontent.com</code>). À chaque ouverture de l'outil <strong>servi en ligne</strong> (pas une copie HTML ouverte en local), les catégories présentes dans ce fichier remplacent automatiquement celles de la base actuelle. Sans connexion, ou en ouverture locale du fichier HTML, la synchronisation échoue simplement en silence et la base déjà en place reste utilisée.</p>
+      <div class="bareme-sync-row">
+        <input type="text" id="baremeUrlInput" value="${esc(baremeSync.url)}" placeholder="https://moncompte.github.io/mon-depot/bareme-couts.xlsx" onchange="setBaremeUrl(this.value)">
+        <button class="btn btn-sm" onclick="syncBaremeNow(false)">${ico('download','i-s')}<span class="bl">Synchroniser maintenant</span></button>
+      </div>
+      <p class="settings-note" style="margin:8px 0 0;">${baremeSync.url ? `Dernière synchronisation : ${fmtSyncAgo(baremeSync.lastSync)}${baremeSync.lastMessage ? ' · ' + esc(baremeSync.lastMessage) : ''}` : "Aucune URL configurée : la base de coûts reste modifiée uniquement à la main (édition directe ou « Importer Excel » ci-dessous)."}</p>
+    </div>
     <div class="settings-tools"><button class="btn btn-sm" onclick="toggleAllCats(true)">Tout déplier</button><button class="btn btn-sm" onclick="toggleAllCats(false)">Tout replier</button></div>`;
   Object.entries(CATS).forEach(([k,cat])=>{
     const list = techniques[k] || [];
@@ -2557,6 +2563,103 @@ function rotationTotals(rot){
     surfStraw: useSurf ? surfStraw : null, surfForage: useSurf ? surfForage : null,
     surfStrawBuried: useSurf ? surfStrawBuried : null, surfForageBuried: useSurf ? surfForageBuried : null,
     forageByCrop, orgFertByProduct };
+}
+
+// ---------- Synchronisation automatique de la base de coûts ----------
+// Permet de pointer la base de coûts (barème COC) vers un fichier .xlsx hébergé en ligne (par
+// exemple dans le même dépôt GitHub que l'outil, à côté du fichier HTML) : l'outil va le relire à
+// chaque ouverture, en silence, et remplace automatiquement les catégories présentes dans le
+// fichier — exactement comme « Importer Excel » dans l'onglet Base de coûts, mais sans action
+// manuelle. Réglage commun à tous les profils (comme la base de coûts elle-même).
+let baremeSync = Object.assign({url:'', lastSync:null, lastStatus:null, lastMessage:''}, loadLS('itk_bareme_sync', {}) || {});
+function saveBaremeSync(){ saveLS('itk_bareme_sync', baremeSync); }
+// Logique de remplacement partagée entre l'import manuel (fichier choisi par l'utilisateur) et la
+// synchronisation automatique (fichier récupéré par fetch()) : prend un classeur XLSX déjà lu et
+// remplace chaque catégorie de techniques dont l'onglet correspondant est présent.
+function applyBaseWorkbook(wb){
+  const norm = s => String(s).trim().toLowerCase();
+  const found = [];
+  Object.keys(CATS).forEach(k=>{
+    const sn = wb.SheetNames.find(n => [SHEETS[k], k, CATS[k].label].some(x=>norm(x)===norm(n)));
+    if(sn) found.push([k, sn]);
+  });
+  if(!found.length) return {found: [], n: 0};
+  let n = 0;
+  found.forEach(([k, sn])=>{
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], {header:1, blankrows:false, defval:null});
+    const list = [];
+    rows.slice(1).forEach(r=>{
+      const name = r[0]==null ? '' : String(r[0]).trim();
+      if(!name) return;
+      list.push(rowToTech(k, r, name)); n++;
+    });
+    techniques[k] = list;
+  });
+  return {found, n};
+}
+function fmtSyncAgo(iso){
+  if(!iso) return 'jamais';
+  const ms = Date.now() - new Date(iso).getTime();
+  const min = Math.round(ms/60000);
+  if(min<1) return "à l'instant";
+  if(min<60) return `il y a ${min} min`;
+  const h = Math.round(min/60);
+  if(h<24) return `il y a ${h} h`;
+  return `il y a ${Math.round(h/24)} j`;
+}
+function setBaremeUrl(v){
+  baremeSync.url = (v||'').trim();
+  saveBaremeSync();
+}
+// Pour détecter si une synchronisation a réellement changé quelque chose : ignore les champs `id`
+// (chaque relecture via rowToTech() en génère de nouveaux via ++uid, même quand le contenu — noms,
+// prix, doses… — est identique), pour ne pas afficher un message « mis à jour » à chaque ouverture
+// alors que rien n'a bougé dans le fichier source.
+function techniquesContentKey(){
+  const strip = t => { const c = Object.assign({}, t); delete c.id; return c; };
+  const out = {};
+  Object.keys(techniques).forEach(k=>{ out[k] = (techniques[k]||[]).map(strip); });
+  return JSON.stringify(out);
+}
+// silent=true (auto-sync au chargement) : jamais de confirm()/alert(), échoue sans bruit (hors
+// connexion, fichier introuvable, ouverture en local via file:// où fetch() est bloqué par le
+// navigateur — c'est le cas d'usage normal de la copie HTML téléchargée en dehors de GitHub Pages).
+async function syncBaremeNow(silent){
+  if(!baremeSync.url){ if(!silent) alert('Indiquez d’abord une URL de fichier .xlsx à synchroniser.'); return; }
+  if(typeof XLSX === 'undefined'){
+    baremeSync.lastStatus = 'error'; baremeSync.lastMessage = 'Module Excel indisponible (hors connexion au chargement de la page).';
+    saveBaremeSync(); if(!silent){ renderSettingsPage(); alert(baremeSync.lastMessage); } return;
+  }
+  const bust = (baremeSync.url.includes('?') ? '&' : '?') + '_=' + Date.now();
+  try{
+    const res = await fetch(baremeSync.url + bust, {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const buf = await res.arrayBuffer();
+    const wb = XLSX.read(new Uint8Array(buf), {type:'array'});
+    const beforeKey = techniquesContentKey();
+    const {found, n} = applyBaseWorkbook(wb);
+    if(!found.length){
+      baremeSync.lastStatus = 'error';
+      baremeSync.lastMessage = "Aucun onglet de catégorie reconnu dans ce fichier.";
+    } else {
+      saveTech();
+      const changed = techniquesContentKey() !== beforeKey;
+      baremeSync.lastStatus = 'ok';
+      baremeSync.lastMessage = `${n} ligne(s) dans ${found.length} catégorie(s)${changed ? '' : ' (déjà à jour)'}.`;
+      if(changed && (currentView==='set' || !silent)) renderSettingsPage();
+      if(changed && !silent) toast(`<span>Base de coûts synchronisée : ${esc(baremeSync.lastMessage)}</span>`);
+      else if(changed) toast(`<span>Base de coûts mise à jour automatiquement depuis le fichier en ligne (${n} ligne(s)).</span>`);
+    }
+  }catch(err){
+    baremeSync.lastStatus = 'error';
+    baremeSync.lastMessage = silent
+      ? "Synchronisation impossible (hors connexion, ou ouverture locale du fichier hors GitHub Pages)."
+      : ('Synchronisation impossible : ' + err.message);
+    if(!silent) alert(baremeSync.lastMessage);
+  }
+  baremeSync.lastSync = new Date().toISOString();
+  saveBaremeSync();
+  if(currentView==='set') renderSettingsPage();
 }
 
 // ---------- Hypothèses du dossier ----------
@@ -3484,7 +3587,7 @@ function closeMenus(){ document.querySelectorAll('details.menu[open]').forEach(d
 document.addEventListener('click', e=>{ if(!e.target.closest('details.menu')) closeMenus(); });
 function dossierSave(){
   closeMenus();
-  const data = {app:'itineraire-technique', version:6, savedAt: new Date().toISOString(), project, synOpts, rotations, techniques, farmers, currentFarmerId};
+  const data = {app:'itineraire-technique', version:6, savedAt: new Date().toISOString(), project, synOpts, rotations, techniques, farmers, currentFarmerId, baremeSync};
   const blob = new Blob([JSON.stringify(data, null, 1)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -3499,7 +3602,7 @@ function dossierSave(){
 // utilisable (et envoyable) tel quel sur n'importe quel poste.
 function htmlSaveAs(){
   closeMenus();
-  const data = {app:'itineraire-technique', version:6, savedAt: new Date().toISOString(), project, synOpts, rotations, techniques, farmers, currentFarmerId};
+  const data = {app:'itineraire-technique', version:6, savedAt: new Date().toISOString(), project, synOpts, rotations, techniques, farmers, currentFarmerId, baremeSync};
   const json = JSON.stringify(data).replace(/<\/script/gi, '<\\/script');
   const tag = `<script id="itk-embedded-data" type="application/json">${json}</` + `script>`;
   // On ne touche qu'à la section <head> : le corps du document contient le code source de
@@ -3562,6 +3665,7 @@ function dossierOpen(input){
       if(data.techniques && confirm('Ce dossier contient sa propre base de coûts. La reprendre à la place de la base actuelle (commune à tous les profils) ?\n\nOK : base du dossier · Annuler : conserver votre base')){
         techniques = data.techniques; saveTech();
       }
+      if(data.baremeSync) { baremeSync = Object.assign({url:'', lastSync:null, lastStatus:null, lastMessage:''}, data.baremeSync); saveBaremeSync(); }
       recomputeUid();
       normalizeRotations();
       saveFarmers(); saveLS('itk_current_farmer', currentFarmerId);
@@ -4905,13 +5009,8 @@ document.getElementById('snapToggle').checked = snapOn;
 render();
 resetUndoHistory();
 showView('rot');
+// Synchronisation automatique de la base de coûts, en arrière-plan (ne bloque jamais l'ouverture
+// de l'outil) : no-op si aucune URL n'a été configurée dans l'onglet Base de coûts.
+if(baremeSync.url) syncBaremeNow(true);
 </script></body></html>
-
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Service Worker:', err));
-  });
-}
-</script>
 </body></html>
